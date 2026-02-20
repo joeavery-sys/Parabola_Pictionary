@@ -3,552 +3,535 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parabola Pictionary Tool</title>
+    <title>Algebra 2 Game Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .secret-input {
-            background-color: #000;
-            color: #fff;
-            caret-color: white;
-            border: 1px solid #333;
-            transition: color 0.3s;
-        }
-        .secret-input.hidden-text {
-            color: #000 !important;
-        }
-        .secret-input:focus {
-            outline: none;
-            border-color: #555;
-        }
-        canvas {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-        .fw-canvas {
-            background: transparent;
-            pointer-events: none;
-            box-shadow: none;
-        }
-        .btn-transform {
-            transition: all 0.2s;
-        }
-        .btn-transform:active:not(:disabled) {
-            transform: scale(0.95);
-        }
-        .btn-transform:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .timer-display {
-            font-family: 'Courier New', Courier, monospace;
-        }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            opacity: 1;
-        }
+        body { background-color: #0f172a; color: #f1f5f9; overflow-x: hidden; }
+        .game-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .game-card:hover { transform: translateY(-10px); border-color: #38bdf8; }
         
-        /* Celebration Animation */
+        /* Shared Styles */
+        canvas { background-color: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dark-canvas { background-color: #1e293b; }
+        .secret-input { background-color: #000; color: #fff; caret-color: white; border: 1px solid #333; transition: color 0.3s; }
+        .secret-input.hidden-text { color: #000 !important; }
+        .timer-display { font-family: 'Courier New', Courier, monospace; }
+        
+        /* Fireworks / Celebration */
+        .fw-canvas { background: transparent; pointer-events: none; }
         @keyframes celebrate {
             0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
             50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        .celebration-badge {
-            animation: celebrate 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        .celebration-badge { animation: celebrate 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        input[type="number"] {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            padding: 4px;
+            border-radius: 4px;
+            font-family: monospace;
         }
+
+        .hidden { display: none; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-sans p-4 md:p-8">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div class="text-center md:text-left">
-                <h1 class="text-4xl font-bold text-blue-400 mb-1">Parabola Pictionary</h1>
-                <p class="text-gray-400">Match the target to score points!</p>
-            </div>
-            
-            <!-- Scoreboard -->
-            <div class="flex items-center gap-6 bg-gray-800 p-4 rounded-2xl border border-gray-700 shadow-2xl">
-                <div class="text-center">
-                    <div class="text-xs uppercase text-red-400 font-black">Red Score</div>
-                    <div id="score1" class="text-3xl font-mono font-bold">0</div>
-                </div>
-                <div class="h-10 w-px bg-gray-700"></div>
-                <div class="text-center">
-                    <div class="text-xs uppercase text-blue-400 font-black">Blue Score</div>
-                    <div id="score2" class="text-3xl font-mono font-bold">0</div>
-                </div>
-                <button onclick="resetScores()" class="ml-2 p-2 hover:bg-gray-700 rounded-full transition text-gray-500 hover:text-white" title="Reset Scores">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    <!-- MAIN MENU -->
+    <div id="mainMenu" class="max-w-4xl mx-auto py-12">
+        <div class="text-center mb-16">
+            <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600 mb-4 italic">Algebra 2 Arcade</h1>
+            <p class="text-slate-400 text-xl">Interactive games for learning Parent Functions and Transformations.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Pictionary Card -->
+            <button onclick="switchScreen('pictionary')" class="game-card bg-slate-800 border-2 border-slate-700 p-8 rounded-3xl text-left group">
+                <div class="bg-red-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0V12m3.024-3.5a1.5 1.5 0 113 0V15m-5.012-3l.012 1.991m7.423-3a1.5 1.5 0 113 0V21" />
                     </svg>
-                </button>
-            </div>
-        </header>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Parabola Pictionary</h2>
+                <p class="text-slate-400 mb-6 leading-relaxed">Race against your teammates to transform a quadratic equation into a specific target form!</p>
+                <span class="text-red-400 font-bold flex items-center gap-2">Play Game <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></span>
+            </button>
 
-        <!-- Secret Teacher Input -->
-        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
+            <!-- Safari Card -->
+            <button onclick="switchScreen('safari')" class="game-card bg-slate-800 border-2 border-slate-700 p-8 rounded-3xl text-left group">
+                <div class="bg-sky-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-sky-500/20 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Stepwise Safari</h2>
+                <p class="text-slate-400 mb-6 leading-relaxed">Build a safe path for your car using piecewise constant functions to collect gems.</p>
+                <span class="text-sky-400 font-bold flex items-center gap-2">Play Game <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PICTIONARY SCREEN -->
+    <div id="pictionaryScreen" class="max-w-6xl mx-auto hidden">
+        <nav class="flex justify-between items-center mb-8">
+            <button onclick="switchScreen('menu')" class="flex items-center gap-2 text-slate-400 hover:text-white font-bold transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Back to Menu
+            </button>
+            <div class="flex items-center gap-6 bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-xl">
+                <div class="text-center"><div class="text-[10px] uppercase text-red-400 font-black">Red</div><div id="picScore1" class="text-2xl font-mono font-bold">0</div></div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center"><div class="text-[10px] uppercase text-blue-400 font-black">Blue</div><div id="picScore2" class="text-2xl font-mono font-bold">0</div></div>
+                <button onclick="resetScoresPictionary()" class="p-1 hover:bg-slate-700 rounded-full text-slate-500 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+            </div>
+        </nav>
+
+        <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 mb-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Target Equation (Vertex Form):</label>
-                    <input type="text" id="targetEquation" 
-                           placeholder="e.g. y = -2(x-3)^2 + 4"
-                           class="secret-input w-full p-3 rounded text-lg font-mono"
-                           value="">
-                    <p id="visibilityHint" class="text-xs text-gray-400 mt-1 italic">Text is visible now. It will hide when you click "Start Round".</p>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Target Equation:</label>
+                    <input type="text" id="targetEquation" placeholder="y = -2(x-3)^2 + 4" class="secret-input w-full p-3 rounded-xl text-lg font-mono">
                 </div>
                 <div class="flex gap-2">
-                    <button id="startBtn" onclick="startRound()" class="flex-1 bg-green-600 hover:bg-green-500 px-4 py-3 rounded font-bold transition">
-                        Start Round
-                    </button>
-                    <button id="revealBtn" onclick="revealTarget()" class="flex-1 bg-blue-600 hover:bg-blue-500 px-4 py-3 rounded font-bold transition">
-                        Reveal Target
-                    </button>
-                    <button onclick="resetAll()" class="bg-red-600 hover:bg-red-500 px-4 py-3 rounded font-bold transition">
-                        Reset
-                    </button>
+                    <button id="picStartBtn" onclick="startRoundPictionary()" class="flex-1 bg-green-600 hover:bg-green-500 px-4 py-3 rounded-xl font-bold transition">Start</button>
+                    <button id="picRevealBtn" onclick="revealTargetPictionary()" class="flex-1 bg-blue-600 hover:bg-blue-500 px-4 py-3 rounded-xl font-bold transition">Reveal</button>
+                    <button onclick="resetAllPictionary()" class="bg-slate-700 hover:bg-slate-600 px-4 py-3 rounded-xl font-bold transition">Reset</button>
                 </div>
             </div>
-            <div id="revealArea" class="mt-4 hidden text-center p-4 bg-gray-700 rounded-lg border-2 border-green-500">
-                <span class="text-2xl font-bold text-yellow-400" id="revealedText"></span>
-            </div>
+            <div id="revealArea" class="mt-4 hidden text-center p-4 bg-slate-700 rounded-xl border-2 border-green-500"><span class="text-2xl font-bold text-yellow-400" id="revealedText"></span></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Team 1 -->
-            <div id="team1Card" class="bg-gray-800 p-6 rounded-xl border-t-4 border-red-500 shadow-xl relative overflow-hidden">
+            <!-- Team Red -->
+            <div class="bg-slate-800 p-6 rounded-3xl border-t-4 border-red-500 shadow-xl relative overflow-hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-red-400">Team Red</h2>
-                    <div class="text-right">
-                        <div id="timer1" class="timer-display text-xl font-bold text-white">00:00.0</div>
-                        <span id="eq1" class="text-sm font-mono text-gray-500 italic block h-5">y = x²</span>
-                    </div>
+                    <h2 class="text-xl font-bold text-red-400">Team Red</h2>
+                    <div class="text-right"><div id="timer1" class="timer-display text-xl font-bold">00:00.0</div><span id="eq1" class="text-sm font-mono text-slate-500 italic">y = x²</span></div>
                 </div>
-                
-                <div class="relative">
-                    <canvas id="canvas1" width="400" height="400" class="w-full h-auto mb-4"></canvas>
-                    <canvas id="fwCanvas1" width="400" height="400" class="fw-canvas absolute inset-0 w-full h-auto mb-4"></canvas>
-                    <!-- Celebration Overlay -->
-                    <div id="celebrate1" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden">
-                        <div class="celebration-badge bg-green-500 text-white px-8 py-4 rounded-2xl shadow-2xl border-4 border-white font-black text-4xl transform -rotate-6">
-                            CORRECT!
-                        </div>
-                    </div>
+                <div class="relative mb-6">
+                    <canvas id="canvas1" width="400" height="400" class="w-full h-auto"></canvas>
+                    <canvas id="fwCanvas1" width="400" height="400" class="fw-canvas absolute inset-0 w-full h-auto"></canvas>
+                    <div id="celebrate1" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden"><div class="celebration-badge bg-green-500 text-white px-8 py-4 rounded-2xl shadow-2xl font-black text-4xl transform -rotate-6">CORRECT!</div></div>
                 </div>
-                
                 <div class="grid grid-cols-3 gap-2">
-                    <button onclick="transform(1, 'up')" class="btn-transform team1-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Up 1</button>
-                    <button onclick="transform(1, 'left')" class="btn-transform team1-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Left 1</button>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] uppercase text-gray-500 text-center font-bold">Integer Factor</label>
-                        <input type="number" id="factor1" value="2" step="1" min="1" class="team1-btn bg-gray-900 border border-gray-600 rounded p-1 text-center text-white text-sm">
-                    </div>
-                    <button onclick="transform(1, 'down')" class="btn-transform team1-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Down 1</button>
-                    <button onclick="transform(1, 'right')" class="btn-transform team1-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Right 1</button>
-                    <div class="grid grid-cols-2 gap-1">
-                        <button onclick="transform(1, 'stretch')" class="btn-transform team1-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded border border-purple-700 text-xs">Stretch</button>
-                        <button onclick="transform(1, 'compress')" class="btn-transform team1-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded border border-purple-700 text-xs">Shrink</button>
-                    </div>
+                    <button onclick="transformPic(1, 'up')" class="btn-transform team1-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Up 1</button>
+                    <button onclick="transformPic(1, 'left')" class="btn-transform team1-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Left 1</button>
+                    <div class="flex flex-col gap-1"><label class="text-[10px] text-center font-bold text-slate-500">Factor</label><input type="number" id="factor1" value="2" step="1" min="1" class="team1-btn text-center text-sm"></div>
+                    <button onclick="transformPic(1, 'down')" class="btn-transform team1-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Down 1</button>
+                    <button onclick="transformPic(1, 'right')" class="btn-transform team1-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Right 1</button>
+                    <div class="grid grid-cols-2 gap-1"><button onclick="transformPic(1, 'stretch')" class="btn-transform team1-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded-lg border border-purple-700 text-xs">Stretch</button><button onclick="transformPic(1, 'compress')" class="btn-transform team1-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded-lg border border-purple-700 text-xs">Shrink</button></div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <button onclick="transform(1, 'reflectX')" class="btn-transform team1-btn bg-red-900/50 hover:bg-red-800 p-2 rounded border border-red-700">Reflect X</button>
-                    <button id="lock1" onclick="lockIn(1)" class="btn-transform team1-btn bg-white text-black font-bold p-2 rounded hover:bg-gray-200">LOCK IN</button>
-                </div>
-                <div id="lockOverlay1" class="absolute inset-0 bg-red-900/20 pointer-events-none hidden flex items-center justify-center">
-                    <div class="bg-red-600 text-white px-6 py-2 rounded-full font-black text-2xl rotate-12 shadow-2xl uppercase tracking-widest">Locked In</div>
-                </div>
+                <div class="grid grid-cols-2 gap-2 mt-4"><button onclick="transformPic(1, 'reflectX')" class="btn-transform team1-btn bg-red-900/50 hover:bg-red-800 p-2 rounded-lg border border-red-700">Reflect X</button><button id="lock1" onclick="lockInPic(1)" class="btn-transform team1-btn bg-white text-black font-bold p-2 rounded-lg">LOCK IN</button></div>
+                <div id="lockOverlay1" class="absolute inset-0 bg-red-900/20 hidden flex items-center justify-center pointer-events-none"><div class="bg-red-600 text-white px-6 py-2 rounded-full font-black text-2xl rotate-12 shadow-2xl">LOCKED</div></div>
             </div>
 
-            <!-- Team 2 -->
-            <div id="team2Card" class="bg-gray-800 p-6 rounded-xl border-t-4 border-blue-500 shadow-xl relative overflow-hidden">
+            <!-- Team Blue -->
+            <div class="bg-slate-800 p-6 rounded-3xl border-t-4 border-blue-500 shadow-xl relative overflow-hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-blue-400">Team Blue</h2>
-                    <div class="text-right">
-                        <div id="timer2" class="timer-display text-xl font-bold text-white">00:00.0</div>
-                        <span id="eq2" class="text-sm font-mono text-gray-500 italic block h-5">y = x²</span>
-                    </div>
+                    <h2 class="text-xl font-bold text-blue-400">Team Blue</h2>
+                    <div class="text-right"><div id="timer2" class="timer-display text-xl font-bold">00:00.0</div><span id="eq2" class="text-sm font-mono text-slate-500 italic">y = x²</span></div>
                 </div>
-                
-                <div class="relative">
-                    <canvas id="canvas2" width="400" height="400" class="w-full h-auto mb-4"></canvas>
-                    <canvas id="fwCanvas2" width="400" height="400" class="fw-canvas absolute inset-0 w-full h-auto mb-4"></canvas>
-                    <!-- Celebration Overlay -->
-                    <div id="celebrate2" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden">
-                        <div class="celebration-badge bg-green-500 text-white px-8 py-4 rounded-2xl shadow-2xl border-4 border-white font-black text-4xl transform rotate-6">
-                            CORRECT!
+                <div class="relative mb-6">
+                    <canvas id="canvas2" width="400" height="400" class="w-full h-auto"></canvas>
+                    <canvas id="fwCanvas2" width="400" height="400" class="fw-canvas absolute inset-0 w-full h-auto"></canvas>
+                    <div id="celebrate2" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden"><div class="celebration-badge bg-green-500 text-white px-8 py-4 rounded-2xl shadow-2xl font-black text-4xl transform rotate-6">CORRECT!</div></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="transformPic(2, 'up')" class="btn-transform team2-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Up 1</button>
+                    <button onclick="transformPic(2, 'left')" class="btn-transform team2-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Left 1</button>
+                    <div class="flex flex-col gap-1"><label class="text-[10px] text-center font-bold text-slate-500">Factor</label><input type="number" id="factor2" value="2" step="1" min="1" class="team2-btn text-center text-sm"></div>
+                    <button onclick="transformPic(2, 'down')" class="btn-transform team2-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Down 1</button>
+                    <button onclick="transformPic(2, 'right')" class="btn-transform team2-btn bg-slate-700 hover:bg-slate-600 p-2 rounded-lg">Right 1</button>
+                    <div class="grid grid-cols-2 gap-1"><button onclick="transformPic(2, 'stretch')" class="btn-transform team2-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded-lg border border-purple-700 text-xs">Stretch</button><button onclick="transformPic(2, 'compress')" class="btn-transform team2-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded-lg border border-purple-700 text-xs">Shrink</button></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-4"><button onclick="transformPic(2, 'reflectX')" class="btn-transform team2-btn bg-blue-900/50 hover:bg-blue-800 p-2 rounded-lg border border-blue-700">Reflect X</button><button id="lock2" onclick="lockInPic(2)" class="btn-transform team2-btn bg-white text-black font-bold p-2 rounded-lg">LOCK IN</button></div>
+                <div id="lockOverlay2" class="absolute inset-0 bg-blue-900/20 hidden flex items-center justify-center pointer-events-none"><div class="bg-blue-600 text-white px-6 py-2 rounded-full font-black text-2xl -rotate-12 shadow-2xl">LOCKED</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAFARI SCREEN -->
+    <div id="safariScreen" class="max-w-6xl mx-auto hidden">
+        <nav class="flex justify-between items-center mb-8">
+            <button onclick="switchScreen('menu')" class="flex items-center gap-2 text-slate-400 hover:text-white font-bold transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Back to Menu
+            </button>
+            <div class="flex gap-4 items-center bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-xl">
+                <div class="text-center px-4 border-r border-slate-700"><div class="text-[10px] uppercase text-slate-500 font-bold">Gems</div><div id="safariScore" class="text-2xl font-mono font-bold text-yellow-400">0 / 5</div></div>
+                <div class="text-center px-4"><div class="text-[10px] uppercase text-slate-500 font-bold">Seg / Par</div><div id="safariPar" class="text-2xl font-mono font-bold text-sky-400">1 / 5</div></div>
+            </div>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl h-fit">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-sky-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> Function Workspace</h2>
+                <div id="safariPieces" class="space-y-3 mb-6 max-h-[350px] overflow-y-auto pr-2"></div>
+                <button onclick="addSafariPiece()" class="w-full py-2 mb-4 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:border-sky-500 transition-colors font-bold uppercase text-xs">+ Add New Piece</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="safariDriveBtn" onclick="toggleSafariDrive()" class="bg-green-600 hover:bg-green-500 py-3 rounded-xl font-black uppercase transition-all shadow-lg active:scale-95">Drive!</button>
+                    <button onclick="resetSafariMap()" class="bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-bold uppercase transition-all active:scale-95">Reset Map</button>
+                </div>
+                <div id="safariStatus" class="mt-4 text-center text-sm font-medium text-slate-500 italic">Ready to explore...</div>
+            </div>
+            <div class="lg:col-span-2 relative">
+                <canvas id="safariCanvas" width="800" height="500" class="w-full h-auto dark-canvas"></canvas>
+                <div id="safariEndScreen" class="absolute inset-0 bg-slate-900/95 flex items-center justify-center rounded-2xl hidden z-10">
+                    <div class="text-center p-8 max-w-md">
+                        <h2 id="safariEndTitle" class="text-5xl font-black mb-2 tracking-tighter">SUCCESS!</h2>
+                        <p id="safariEndMsg" class="text-lg text-slate-300 mb-4 italic">Summary...</p>
+                        <div id="safariChallenge" class="mb-8 p-3 rounded-xl bg-slate-800 border border-slate-700 text-sm"></div>
+                        <div class="flex flex-col gap-3">
+                            <button onclick="trySafariAgain()" class="bg-sky-500 hover:bg-sky-400 text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest transition-all hover:scale-105 shadow-lg">Try Again (Same Map)</button>
+                            <button onclick="resetSafariMap()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-8 py-3 rounded-xl font-bold uppercase tracking-widest transition-all">New Random Map</button>
                         </div>
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="transform(2, 'up')" class="btn-transform team2-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Up 1</button>
-                    <button onclick="transform(2, 'left')" class="btn-transform team2-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Left 1</button>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] uppercase text-gray-500 text-center font-bold">Integer Factor</label>
-                        <input type="number" id="factor2" value="2" step="1" min="1" class="team2-btn bg-gray-900 border border-gray-600 rounded p-1 text-center text-white text-sm">
-                    </div>
-                    <button onclick="transform(2, 'down')" class="btn-transform team2-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Down 1</button>
-                    <button onclick="transform(2, 'right')" class="btn-transform team2-btn bg-gray-700 hover:bg-gray-600 p-2 rounded">Right 1</button>
-                    <div class="grid grid-cols-2 gap-1">
-                        <button onclick="transform(2, 'stretch')" class="btn-transform team2-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded border border-purple-700 text-xs">Stretch</button>
-                        <button onclick="transform(2, 'compress')" class="btn-transform team2-btn bg-purple-900/40 hover:bg-purple-800 p-2 rounded border border-purple-700 text-xs">Shrink</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <button onclick="transform(2, 'reflectX')" class="btn-transform team2-btn bg-blue-900/50 hover:bg-blue-800 p-2 rounded border border-blue-700">Reflect X</button>
-                    <button id="lock2" onclick="lockIn(2)" class="btn-transform team2-btn bg-white text-black font-bold p-2 rounded hover:bg-gray-200">LOCK IN</button>
-                </div>
-                <div id="lockOverlay2" class="absolute inset-0 bg-blue-900/20 pointer-events-none hidden flex items-center justify-center">
-                    <div class="bg-blue-600 text-white px-6 py-2 rounded-full font-black text-2xl -rotate-12 shadow-2xl uppercase tracking-widest">Locked In</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const state = {
+        // GLOBAL SCREEN STATE
+        let activeScreen = 'menu';
+        function switchScreen(screen) {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('pictionaryScreen').classList.add('hidden');
+            document.getElementById('safariScreen').classList.add('hidden');
+            
+            activeScreen = screen;
+            if (screen === 'menu') {
+                document.getElementById('mainMenu').classList.remove('hidden');
+                stopLoops();
+            } else if (screen === 'pictionary') {
+                document.getElementById('pictionaryScreen').classList.remove('hidden');
+                resetAllPictionary();
+                startAnimationLoop();
+            } else if (screen === 'safari') {
+                document.getElementById('safariScreen').classList.remove('hidden');
+                resetSafariMap();
+            }
+        }
+
+        function stopLoops() {
+            clearInterval(picTimerInterval);
+            cancelAnimationFrame(picFwRequest);
+            safariState.car.isDriving = false;
+        }
+
+        // ==========================================
+        // PARABOLA PICTIONARY LOGIC
+        // ==========================================
+        const picState = {
             1: { h: 0, k: 0, a: 1, locked: false, startTime: null, finalTime: null, score: 0 },
             2: { h: 0, k: 0, a: 1, locked: false, startTime: null, finalTime: null, score: 0 },
             target: { h: 0, k: 0, a: 1, active: false },
             roundActive: false
         };
-
         const gridScale = 20;
-        let timerInterval;
-
-        // Fireworks State
+        let picTimerInterval;
+        let picFwRequest;
         const fwParticles = { 1: [], 2: [] };
-        
+
         class Particle {
             constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
+                this.x = x; this.y = y; this.color = color;
                 this.radius = Math.random() * 3 + 1;
-                this.velocity = {
-                    x: (Math.random() - 0.5) * 8,
-                    y: (Math.random() - 0.5) * 8
-                };
-                this.alpha = 1;
-                this.decay = Math.random() * 0.015 + 0.015;
+                this.velocity = { x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8 };
+                this.alpha = 1; this.decay = Math.random() * 0.015 + 0.015;
             }
-
             draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.beginPath();
+                ctx.save(); ctx.globalAlpha = this.alpha; ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.restore();
+                ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
             }
-
             update() {
-                this.velocity.y += 0.05; // gravity
-                this.x += this.velocity.x;
-                this.y += this.velocity.y;
+                this.velocity.y += 0.05; this.x += this.velocity.x; this.y += this.velocity.y;
                 this.alpha -= this.decay;
             }
         }
 
-        function launchFireworks(teamNum) {
-            const canvas = document.getElementById(`fwCanvas${teamNum}`);
-            const colors = teamNum === 1 
-                ? ['#ef4444', '#f87171', '#fee2e2', '#ffffff'] 
-                : ['#3b82f6', '#60a5fa', '#dbeafe', '#ffffff'];
-            
-            // Initial burst
-            for (let i = 0; i < 100; i++) {
-                fwParticles[teamNum].push(new Particle(
-                    canvas.width / 2, 
-                    canvas.height / 2, 
-                    colors[Math.floor(Math.random() * colors.length)]
-                ));
-            }
-        }
-
-        function animateFireworks() {
-            [1, 2].forEach(num => {
-                const canvas = document.getElementById(`fwCanvas${num}`);
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                fwParticles[num] = fwParticles[num].filter(p => p.alpha > 0);
-                fwParticles[num].forEach(p => {
-                    p.update();
-                    p.draw(ctx);
-                });
-
-                // Random small extra pops while celebrating
-                if (state.target.active && !document.getElementById(`celebrate${num}`).classList.contains('hidden')) {
-                    if (Math.random() < 0.05) {
-                        const colors = num === 1 ? ['#ef4444', '#ffffff'] : ['#3b82f6', '#ffffff'];
-                        const x = Math.random() * canvas.width;
-                        const y = Math.random() * canvas.height;
-                        for (let i = 0; i < 15; i++) {
-                            fwParticles[num].push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
+        function startAnimationLoop() {
+            function animate() {
+                if (activeScreen !== 'pictionary') return;
+                [1, 2].forEach(num => {
+                    const canvas = document.getElementById(`fwCanvas${num}`);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    fwParticles[num] = fwParticles[num].filter(p => p.alpha > 0);
+                    fwParticles[num].forEach(p => { p.update(); p.draw(ctx); });
+                    if (picState.target.active && !document.getElementById(`celebrate${num}`).classList.contains('hidden')) {
+                        if (Math.random() < 0.05) {
+                            const colors = num === 1 ? ['#ef4444', '#ffffff'] : ['#3b82f6', '#ffffff'];
+                            const x = Math.random() * canvas.width;
+                            const y = Math.random() * canvas.height;
+                            for (let i = 0; i < 15; i++) fwParticles[num].push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
                         }
                     }
-                }
-            });
-            requestAnimationFrame(animateFireworks);
+                });
+                picFwRequest = requestAnimationFrame(animate);
+            }
+            animate();
         }
 
-        function init() {
-            draw(1);
-            draw(2);
-            disableButtons(1, true);
-            disableButtons(2, true);
-            requestAnimationFrame(animateFireworks);
-        }
-
-        function draw(teamNum) {
+        function drawPic(teamNum) {
             const canvas = document.getElementById(`canvas${teamNum}`);
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            const { h, k, a } = state[teamNum];
-            
+            const { h, k, a } = picState[teamNum];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-
-            // Grid & Axes
-            ctx.strokeStyle = '#e5e7eb';
-            ctx.lineWidth = 1;
-            for(let x = 0; x <= canvas.width; x += gridScale) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-            }
-            for(let y = 0; y <= canvas.height; y += gridScale) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-            }
+            ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+            for(let x = 0; x <= canvas.width; x += gridScale) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for(let y = 0; y <= canvas.height; y += gridScale) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
             ctx.strokeStyle = '#374151'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
-
-            // Draw Target Solution (Green Highlighter)
-            if (state.target.active) {
-                ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
-                ctx.lineWidth = 12;
-                ctx.setLineDash([8, 4]);
+            if (picState.target.active) {
+                ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)'; ctx.lineWidth = 12; ctx.setLineDash([8, 4]);
                 ctx.beginPath();
                 for(let x = -10; x <= 10; x += 0.1) {
-                    const ty = state.target.a * Math.pow(x - state.target.h, 2) + state.target.k;
-                    const txCan = centerX + (x * gridScale);
-                    const tyCan = centerY - (ty * gridScale);
-                    if(x === -10) ctx.moveTo(txCan, tyCan);
-                    else ctx.lineTo(txCan, tyCan);
+                    const ty = picState.target.a * Math.pow(x - picState.target.h, 2) + picState.target.k;
+                    const txCan = centerX + (x * gridScale); const tyCan = centerY - (ty * gridScale);
+                    if(x === -10) ctx.moveTo(txCan, tyCan); else ctx.lineTo(txCan, tyCan);
                 }
-                ctx.stroke();
-                ctx.setLineDash([]);
+                ctx.stroke(); ctx.setLineDash([]);
             }
-
-            // Draw Team Parabola
-            ctx.strokeStyle = teamNum === 1 ? '#ef4444' : '#3b82f6';
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = teamNum === 1 ? '#ef4444' : '#3b82f6'; ctx.lineWidth = 3;
             ctx.beginPath();
             for(let x = -10; x <= 10; x += 0.1) {
                 const y = a * Math.pow(x - h, 2) + k;
-                const canvasX = centerX + (x * gridScale);
-                const canvasY = centerY - (y * gridScale);
-                if(x === -10) ctx.moveTo(canvasX, canvasY);
-                else ctx.lineTo(canvasX, canvasY);
+                const canvasX = centerX + (x * gridScale); const canvasY = centerY - (y * gridScale);
+                if(x === -10) ctx.moveTo(canvasX, canvasY); else ctx.lineTo(canvasX, canvasY);
             }
             ctx.stroke();
-
-            updateEquationDisplay(teamNum);
+            updatePicEqDisplay(teamNum);
         }
 
-        function startRound() {
-            if (state.roundActive) return;
-            if (document.getElementById('targetEquation').value.trim() === "") return;
-            
-            parseTarget();
-            state.roundActive = true;
+        function startRoundPictionary() {
+            if (picState.roundActive) return;
+            const targetVal = document.getElementById('targetEquation').value;
+            if (targetVal.trim() === "") return;
+            parsePicTarget();
+            picState.roundActive = true;
             const now = Date.now();
-            state[1].startTime = now;
-            state[2].startTime = now;
-            
+            picState[1].startTime = now; picState[2].startTime = now;
             document.getElementById('targetEquation').classList.add('hidden-text');
-            document.getElementById('visibilityHint').innerText = "Text is now hidden. Click 'Reveal' or 'Reset' to see it again.";
-
-            disableButtons(1, false);
-            disableButtons(2, false);
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('startBtn').innerText = "Round in Progress...";
-            document.getElementById('revealBtn').disabled = false;
-
-            timerInterval = setInterval(updateTimers, 100);
-            
-            updateEquationDisplay(1);
-            updateEquationDisplay(2);
-        }
-
-        function updateTimers() {
-            const now = Date.now();
-            [1, 2].forEach(num => {
-                if (!state[num].locked) {
-                    const elapsed = now - state[num].startTime;
-                    document.getElementById(`timer${num}`).innerText = formatTime(elapsed);
-                }
-            });
+            disablePicButtons(1, false); disablePicButtons(2, false);
+            document.getElementById('picStartBtn').disabled = true;
+            picTimerInterval = setInterval(() => {
+                const n = Date.now();
+                [1, 2].forEach(num => { if(!picState[num].locked) document.getElementById(`timer${num}`).innerText = formatTime(n - picState[num].startTime); });
+            }, 100);
+            updatePicEqDisplay(1); updatePicEqDisplay(2);
         }
 
         function formatTime(ms) {
-            const seconds = Math.floor(ms / 1000);
-            const tenth = Math.floor((ms % 1000) / 100);
-            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const s = (seconds % 60).toString().padStart(2, '0');
+            const seconds = Math.floor(ms / 1000); const tenth = Math.floor((ms % 1000) / 100);
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0');
             return `${m}:${s}.${tenth}`;
         }
 
-        function lockIn(teamNum) {
-            state[teamNum].locked = true;
-            state[teamNum].finalTime = Date.now() - state[teamNum].startTime;
-            document.getElementById(`timer${teamNum}`).innerText = formatTime(state[teamNum].finalTime);
+        function lockInPic(teamNum) {
+            picState[teamNum].locked = true;
+            picState[teamNum].finalTime = Date.now() - picState[teamNum].startTime;
+            document.getElementById(`timer${teamNum}`).innerText = formatTime(picState[teamNum].finalTime);
             document.getElementById(`lockOverlay${teamNum}`).classList.remove('hidden');
-            disableButtons(teamNum, true);
-
-            updateEquationDisplay(teamNum);
-
-            if (state[1].locked && state[2].locked) {
-                clearInterval(timerInterval);
-            }
+            disablePicButtons(teamNum, true);
+            updatePicEqDisplay(teamNum);
+            if (picState[1].locked && picState[2].locked) clearInterval(picTimerInterval);
         }
 
-        function disableButtons(teamNum, disabled) {
-            const buttons = document.querySelectorAll(`.team${teamNum}-btn`);
-            buttons.forEach(b => b.disabled = disabled);
-        }
-
-        function parseTarget() {
-            const input = document.getElementById('targetEquation').value;
-            try {
-                const clean = input.replace(/\s+/g, '');
-                
-                let aMatch = clean.match(/^y=([^x(]+)/);
-                state.target.a = aMatch ? parseFloat(aMatch[1]) : 1;
-                if (clean.includes('y=-(')) state.target.a = -1;
-
-                let hMatch = clean.match(/\(x([+-]\d*\.?\d*)\)/);
-                state.target.h = hMatch ? -parseFloat(hMatch[1]) : 0;
-
-                let kMatch = clean.match(/\^2([+-]\d*\.?\d*)$/);
-                state.target.k = kMatch ? parseFloat(kMatch[1]) : 0;
-            } catch (e) {
-                console.error("Parsing failed, using default.");
-            }
-        }
-
-        function transform(teamNum, type) {
-            if (state[teamNum].locked) return;
-            const s = state[teamNum];
-            const factorInput = document.getElementById(`factor${teamNum}`);
-            const factor = Math.max(1, parseInt(factorInput.value, 10) || 1);
-
+        function transformPic(teamNum, type) {
+            if (picState[teamNum].locked) return;
+            const s = picState[teamNum];
+            const factor = Math.max(1, parseInt(document.getElementById(`factor${teamNum}`).value, 10) || 1);
             switch(type) {
-                case 'up': s.k += 1; break;
-                case 'down': s.k -= 1; break;
-                case 'left': s.h -= 1; break;
-                case 'right': s.h += 1; break;
-                case 'stretch': s.a *= factor; break;
-                case 'compress': s.a /= factor; break;
+                case 'up': s.k += 1; break; case 'down': s.k -= 1; break; case 'left': s.h -= 1; break;
+                case 'right': s.h += 1; break; case 'stretch': s.a *= factor; break; case 'compress': s.a /= factor; break;
                 case 'reflectX': s.a *= -1; break;
             }
-            draw(teamNum);
+            drawPic(teamNum);
         }
 
-        function updateEquationDisplay(teamNum) {
-            const { h, k, a, locked } = state[teamNum];
+        function disablePicButtons(teamNum, disabled) {
+            document.querySelectorAll(`.team${teamNum}-btn`).forEach(b => b.disabled = disabled);
+        }
+
+        function parsePicTarget() {
+            const input = document.getElementById('targetEquation').value.replace(/\s+/g, '');
+            try {
+                let aMatch = input.match(/^y=([^x(]+)/); picState.target.a = aMatch ? parseFloat(aMatch[1]) : 1;
+                if (input.includes('y=-(')) picState.target.a = -1;
+                let hMatch = input.match(/\(x([+-]\d*\.?\d*)\)/); picState.target.h = hMatch ? -parseFloat(hMatch[1]) : 0;
+                let kMatch = input.match(/\^2([+-]\d*\.?\d*)$/); picState.target.k = kMatch ? parseFloat(kMatch[1]) : 0;
+            } catch (e) { console.error("Parse fail"); }
+        }
+
+        function updatePicEqDisplay(teamNum) {
+            const { h, k, a, locked } = picState[teamNum];
             const display = document.getElementById(`eq${teamNum}`);
-            
-            if (state.roundActive && !locked) {
-                display.innerText = "y = [Hidden]";
-                display.classList.add('text-gray-600');
-                display.classList.remove('text-gray-500');
-                return;
-            }
-
-            display.classList.remove('text-gray-600');
-            display.classList.add('text-gray-500');
-
-            let aFormatted = Math.round(a * 100) / 100;
-            let aStr = aFormatted === 1 ? "" : aFormatted === -1 ? "-" : aFormatted.toString();
+            if (picState.roundActive && !locked) { display.innerText = "y = [Hidden]"; return; }
+            let aStr = a === 1 ? "" : a === -1 ? "-" : (Math.round(a*100)/100).toString();
             let hStr = h === 0 ? "x" : `(x ${h > 0 ? '-' : '+'} ${Math.abs(h)})`;
             let kStr = k === 0 ? "" : ` ${k > 0 ? '+' : '-'} ${Math.abs(k)}`;
             display.innerText = `y = ${aStr}${hStr}²${kStr}`;
         }
 
-        function revealTarget() {
-            if (state.target.active) return;
-            
-            state.target.active = true;
-            const input = document.getElementById('targetEquation');
-            const area = document.getElementById('revealArea');
-            const text = document.getElementById('revealedText');
-            
-            text.innerText = "Target: " + (input.value || "y = x²");
-            area.classList.remove('hidden');
-            input.classList.remove('hidden-text');
-            
-            clearInterval(timerInterval);
-            
+        function revealTargetPictionary() {
+            if (picState.target.active) return;
+            picState.target.active = true;
+            document.getElementById('revealArea').classList.remove('hidden');
+            document.getElementById('revealedText').innerText = "Target: " + document.getElementById('targetEquation').value;
+            document.getElementById('targetEquation').classList.remove('hidden-text');
+            clearInterval(picTimerInterval);
             [1, 2].forEach(num => {
-                const team = state[num];
-                const target = state.target;
-                
-                const matches = (Math.abs(team.h - target.h) < 0.01) && 
-                              (Math.abs(team.k - target.k) < 0.01) && 
-                              (Math.abs(team.a - target.a) < 0.01);
-                
-                if (matches) {
-                    state[num].score++;
-                    document.getElementById(`score${num}`).innerText = state[num].score;
+                const matches = (Math.abs(picState[num].h - picState.target.h) < 0.01) && (Math.abs(picState[num].k - picState.target.k) < 0.01) && (Math.abs(picState[num].a - picState.target.a) < 0.01);
+                if (matches) { 
+                    picState[num].score++; document.getElementById(`picScore${num}`).innerText = picState[num].score;
                     document.getElementById(`celebrate${num}`).classList.remove('hidden');
-                    launchFireworks(num);
+                    for (let i = 0; i < 100; i++) fwParticles[num].push(new Particle(200, 200, num === 1 ? '#ef4444' : '#3b82f6'));
                 }
-                draw(num);
+                drawPic(num);
             });
-            
-            document.getElementById('revealBtn').disabled = true;
         }
 
-        function resetScores() {
-            state[1].score = 0;
-            state[2].score = 0;
-            document.getElementById('score1').innerText = "0";
-            document.getElementById('score2').innerText = "0";
-        }
-
-        function resetAll() {
-            clearInterval(timerInterval);
-            state.roundActive = false;
-            state.target.active = false;
-            
-            const targetInput = document.getElementById('targetEquation');
-            targetInput.classList.remove('hidden-text');
-            targetInput.value = ""; 
-            document.getElementById('visibilityHint').innerText = "Text is visible now. It will hide when you click 'Start Round'.";
-
+        function resetAllPictionary() {
+            clearInterval(picTimerInterval);
+            picState.roundActive = false; picState.target.active = false;
+            document.getElementById('targetEquation').classList.remove('hidden-text');
+            document.getElementById('targetEquation').value = "";
+            document.getElementById('picStartBtn').disabled = false;
+            document.getElementById('revealArea').classList.add('hidden');
             [1, 2].forEach(num => {
-                const score = state[num].score;
-                state[num] = { h: 0, k: 0, a: 1, locked: false, startTime: null, finalTime: null, score: score };
+                picState[num] = { ...picState[num], h: 0, k: 0, a: 1, locked: false, startTime: null };
                 document.getElementById(`timer${num}`).innerText = "00:00.0";
                 document.getElementById(`lockOverlay${num}`).classList.add('hidden');
                 document.getElementById(`celebrate${num}`).classList.add('hidden');
-                document.getElementById(`factor${num}`).value = "2";
-                fwParticles[num] = [];
-                draw(num);
-                disableButtons(num, true);
+                fwParticles[num] = []; drawPic(num); disablePicButtons(num, true);
             });
-
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('startBtn').innerText = "Start Round";
-            document.getElementById('revealBtn').disabled = false;
-            document.getElementById('revealArea').classList.add('hidden');
+        }
+        function resetScoresPictionary() {
+            picState[1].score = 0; picState[2].score = 0;
+            document.getElementById('picScore1').innerText = "0"; document.getElementById('picScore2').innerText = "0";
         }
 
-        window.onload = init;
+        // ==========================================
+        // STEPWISE SAFARI LOGIC
+        // ==========================================
+        const safariState = {
+            pieces: [], prizes: [], par: 5,
+            car: { x: 0, y: 10, dir: 1, isDriving: false, speed: 0.12, isFalling: false, fallSpeed: 0.18 }
+        };
+        const sScale = 35; const sOffsetX = 50; const sOffsetY = 450;
+
+        function addSafariPiece(y=10, x1=0, x2=4, isDefault=false) {
+            const id = Math.random().toString(36).substr(2, 9);
+            const row = document.createElement('div');
+            row.className = 'input-row p-3 rounded-xl border border-slate-700 flex items-center gap-2 text-xs';
+            row.id = `safari-p-${id}`;
+            row.innerHTML = `
+                <span class="font-bold text-slate-500">f(x)=</span><input type="number" value="${y}" class="s-y w-12" onchange="updateSafariPieces()">
+                <span class="font-bold text-slate-500 ml-1">x:[</span><input type="number" value="${x1}" class="s-x1 w-12" onchange="updateSafariPieces()">
+                <span class="mx-0.5">,</span><input type="number" value="${x2}" class="s-x2 w-12" onchange="updateSafariPieces()"><span class="mr-1">]</span>
+                ${!isDefault ? `<button onclick="removeSafariPiece('${id}')" class="text-slate-600 hover:text-rose-500 ml-auto p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : `<span class="ml-auto text-sky-500 text-[8px] font-black uppercase opacity-50">Start</span>`}
+            `;
+            document.getElementById('safariPieces').appendChild(row);
+            updateSafariPieces();
+        }
+
+        function removeSafariPiece(id) { document.getElementById(`safari-p-${id}`).remove(); updateSafariPieces(); }
+
+        function updateSafariPieces() {
+            const rows = document.querySelectorAll('#safariPieces .input-row');
+            safariState.pieces = Array.from(rows).map(row => ({
+                y: parseFloat(row.querySelector('.s-y').value),
+                x1: Math.min(parseFloat(row.querySelector('.s-x1').value), parseFloat(row.querySelector('.s-x2').value)),
+                x2: Math.max(parseFloat(row.querySelector('.s-x1').value), parseFloat(row.querySelector('.s-x2').value))
+            }));
+            document.getElementById('safariPar').innerText = `${safariState.pieces.length} / ${safariState.par}`;
+            document.getElementById('safariPar').className = `text-2xl font-mono font-bold ${safariState.pieces.length > safariState.par ? 'text-rose-400' : 'text-sky-400'}`;
+            if (!safariState.car.isDriving) drawSafari();
+        }
+
+        function drawSafari() {
+            const canvas = document.getElementById('safariCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 0.5;
+            for(let i=0; i<=20; i++) { const p = sToC(i,0); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, sToC(i,15).y); ctx.stroke(); if(i%5===0) { ctx.fillStyle='#64748b'; ctx.fillText(i, p.x-5, p.y+15); } }
+            for(let i=0; i<=15; i++) { const p = sToC(0,i); ctx.beginPath(); ctx.moveTo(sOffsetX, p.y); ctx.lineTo(canvas.width, p.y); ctx.stroke(); if(i%5===0) { ctx.fillStyle='#64748b'; ctx.fillText(i, sOffsetX-25, p.y+3); } }
+            ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+            safariState.pieces.forEach(p => { const p1 = sToC(p.x1, p.y); const p2 = sToC(p.x2, p.y); ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); });
+            safariState.prizes.forEach(p => { if(!p.collected) { const pos = sToC(p.x, p.y); ctx.font = '24px serif'; ctx.textAlign = 'center'; ctx.fillText('💎', pos.x, pos.y + 8); } });
+            const cPos = sToC(safariState.car.x, safariState.car.y); ctx.save(); ctx.translate(cPos.x, cPos.y); if(safariState.car.dir===-1) ctx.scale(-1,1); if(safariState.car.isFalling) ctx.rotate(0.2*safariState.car.dir); ctx.font='32px serif'; ctx.textAlign='center'; ctx.fillText('🚗', 0, 0); ctx.restore();
+        }
+
+        function sToC(mx, my) { return { x: sOffsetX + mx * sScale, y: sOffsetY - my * sScale }; }
+
+        function toggleSafariDrive() {
+            if (safariState.car.isDriving) return;
+            updateSafariPieces();
+            safariState.car.isDriving = true;
+            document.getElementById('safariDriveBtn').disabled = true;
+            loopSafari();
+        }
+
+        function loopSafari() {
+            if(!safariState.car.isDriving) return;
+            const c = safariState.car;
+            if (c.x >= 20) { c.x = 20; c.dir = -1; } else if (c.x <= 0) { c.x = 0; c.dir = 1; }
+            const floors = safariState.pieces.filter(p => c.x >= p.x1-0.01 && c.x <= p.x2+0.01);
+            const supported = floors.filter(p => p.y <= c.y+0.05).sort((a,b)=>b.y-a.y);
+            const targetY = supported[0] ? supported[0].y : 0;
+            if (c.y > targetY+0.02) { c.isFalling = true; c.y -= c.fallSpeed; if(c.y<targetY){c.y=targetY; c.isFalling=false;} document.getElementById('safariStatus').innerText="Falling..."; }
+            else { c.isFalling = false; c.x += c.speed*c.dir; if(!supported[0] && c.y>0) c.isFalling=true; document.getElementById('safariStatus').innerText=c.dir===1?"Right...":"Left..."; }
+            safariState.prizes.forEach(p => { if(!p.collected) { if(Math.sqrt((c.x-p.x)**2+(c.y-p.y)**2)<0.75) p.collected=true; } });
+            const score = safariState.prizes.filter(p => p.collected).length;
+            document.getElementById('safariScore').innerText = `${score} / 5`;
+            if (score === 5) { endSafari("SUCCESS!", "You got all gems!", "text-yellow-400"); return; }
+            if (c.y <= 0) { endSafari("CRASHED!", "Mind the gaps!", "text-rose-500"); return; }
+            drawSafari(); requestAnimationFrame(loopSafari);
+        }
+
+        function endSafari(title, msg, cls) {
+            safariState.car.isDriving = false;
+            document.getElementById('safariEndScreen').classList.remove('hidden');
+            document.getElementById('safariEndTitle').innerText = title;
+            document.getElementById('safariEndTitle').className = `text-5xl font-black mb-2 tracking-tighter ${cls}`;
+            document.getElementById('safariEndMsg').innerText = msg;
+            const chal = document.getElementById('safariChallenge');
+            if (title === "SUCCESS!") {
+                if (safariState.pieces.length <= safariState.par) chal.innerHTML = `<span class="text-green-400 font-bold">CHALLENGE MET!</span> Efficiency Master.`;
+                else chal.innerHTML = `<span class="text-yellow-400">CLEAR.</span> Can you do it in ${safariState.par}?`;
+            } else chal.innerHTML = "Try adjusting your pieces!";
+            drawSafari();
+        }
+
+        function resetSafariMap() {
+            document.getElementById('safariPieces').innerHTML = '';
+            addSafariPiece(10, 0, 4, true);
+            safariState.prizes = []; let hSet = new Set();
+            for(let i=0; i<5; i++) { const rx = Math.floor(Math.random()*18)+2; const ry = Math.floor(Math.random()*9)+1; safariState.prizes.push({x:rx,y:ry,collected:false}); hSet.add(ry); }
+            safariState.par = hSet.size;
+            trySafariAgain();
+        }
+
+        function trySafariAgain() {
+            safariState.car = { x: 0, y: 10, dir: 1, isDriving: false, speed: 0.12, isFalling: false, fallSpeed: 0.18 };
+            safariState.prizes.forEach(p => p.collected = false);
+            document.getElementById('safariScore').innerText = '0 / 5';
+            document.getElementById('safariStatus').innerText = "Ready...";
+            document.getElementById('safariEndScreen').classList.add('hidden');
+            document.getElementById('safariDriveBtn').disabled = false;
+            updateSafariPieces();
+        }
+
+        // Initialize App
+        window.onload = () => { switchScreen('menu'); };
     </script>
 </body>
 </html>
